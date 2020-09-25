@@ -41,7 +41,7 @@ class RoleTest extends TestCase
 
     public function test_users_relation()
     {
-        $this->test_hasMany_relation(
+        $this->hasMany_relation_test(
             User::class,
             'role_id',
             $this->role->users()

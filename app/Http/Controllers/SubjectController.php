@@ -108,7 +108,6 @@ class SubjectController extends Controller
         } else {
             $subjectUser = $this->subjectRepo->getSubjectUsersBySubject($subject)
                 ->firstWhere('user_id', $user->id);
-
             if ($subjectUser) {
                 $data['subject'] = $subject;
                 $data['tasks'] = $this->subjectRepo
@@ -118,7 +117,7 @@ class SubjectController extends Controller
 
                 return view('trainee.detail-subject', $data);
             } else {
-                abort(404);
+                return redirect()->back();
             }
         }
     }

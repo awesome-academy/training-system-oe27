@@ -5,7 +5,10 @@ namespace Tests\Unit\Http\Controllers;
 use App\Http\Controllers\SubjectController;
 use App\Http\Requests\SubjectRequest;
 use App\Models\Course;
+use App\Models\CourseUser;
 use App\Models\Subject;
+use App\Models\SubjectUser;
+use App\Models\User;
 use App\Repositories\Course\CourseRepositoryInterface;
 use App\Repositories\CourseUser\CourseUserRepositoryInterface;
 use App\Repositories\Subject\SubjectRepositoryInterface;
@@ -14,6 +17,7 @@ use App\Repositories\Task\TaskRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -79,11 +83,145 @@ class SubjectControllerTest extends TestCase
         $this->assertArrayHasKey('subjects', $data);
     }
 
+    public function test_show_trainee_function()
+    {
+        $userActive = new User();
+        $userActive->pivot = new Pivot();
+        $userActive->pivot->start_time = config('number.date_test');
+        $subject = new Subject();
+        $subject->usersActive = [
+            $userActive,
+        ];
+        $this->subjectMock
+            ->shouldReceive('getById')
+            ->with(config('number.init'), [
+                'usersActive',
+                'course',
+            ])
+            ->once()
+            ->andReturn($subject);
+
+        $subjectUser = new SubjectUser();
+        $subjectUser->user_id = config('number.role.trainee');
+        $collection = new Collection($subjectUser);
+        $this->subjectMock
+            ->shouldReceive('getSubjectUsersBySubject')
+            ->with($subject)
+            ->once()
+            ->andReturn($collection);
+        $user = new User([
+            'id' => config('number.init'),
+            'role_id' => config('number.role.trainee'),
+        ]);
+        $this->be($user);
+        $this->subjectMock
+            ->shouldReceive('getTasksBySubject')
+            ->with($subject)
+            ->once()
+            ->andReturn($collection);
+        $result = $this->subjectController->show(config('number.init'));
+        $data = $result->getData();
+        $this->assertIsArray($data);
+        $this->assertEquals('trainee.detail-subject', $result->getName());
+        $this->assertArrayHasKey('subject', $data);
+        $this->assertArrayHasKey('tasks', $data);
+        $this->assertArrayHasKey('subjectUser', $data);
+    }
+
+    public function test_show_trainee_function_fail()
+    {
+        $userActive = new User();
+        $userActive->pivot = new Pivot();
+        $userActive->pivot->start_time = config('number.date_test');
+        $subject = new Subject();
+        $subject->usersActive = [
+            $userActive,
+        ];
+        $this->subjectMock
+            ->shouldReceive('getById')
+            ->with(config('number.init'), [
+                'usersActive',
+                'course',
+            ])
+            ->once()
+            ->andReturn($subject);
+
+        $subjectUser = new SubjectUser();
+        $subjectUser->user_id = config('number.empty');
+        $collection = new Collection($subjectUser);
+        $this->subjectMock
+            ->shouldReceive('getSubjectUsersBySubject')
+            ->with($subject)
+            ->once()
+            ->andReturn($collection);
+        $user = new User([
+            'id' => config('number.init'),
+            'role_id' => config('number.role.trainee'),
+        ]);
+        $this->be($user);
+        $result = $this->subjectController->show(config('number.init'));
+        $this->assertInstanceOf(RedirectResponse::class, $result);
+    }
+
+    public function test_show_supervisor_function()
+    {
+        $userActive = new User();
+        $userActive->pivot = new Pivot();
+        $userActive->pivot->start_time = config('number.date_test');
+        $subject = new Subject();
+        $subject->usersActive = [
+            $userActive,
+        ];
+        $this->subjectMock
+            ->shouldReceive('getById')
+            ->with(config('number.init'), [
+                'usersActive',
+                'course',
+            ])
+            ->once()
+            ->andReturn($subject);
+
+        $subjectUser = new SubjectUser();
+        $subjectUser->user_id = config('number.role.trainee');
+        $collection = new Collection($subjectUser);
+        $this->subjectMock
+            ->shouldReceive('getTasksBySubject')
+            ->with($subject)
+            ->once()
+            ->andReturn($collection);
+        $user = new User([
+            'id' => config('number.init'),
+            'role_id' => config('number.role.supervisor'),
+        ]);
+        $this->be($user);
+        $result = $this->subjectController->show(config('number.init'));
+        $data = $result->getData();
+        $this->assertIsArray($data);
+        $this->assertEquals('supervisor.manage-subject.detail-subject', $result->getName());
+        $this->assertArrayHasKey('subject', $data);
+        $this->assertArrayHasKey('tasks', $data);
+    }
+
+    public function test_create_function()
+    {
+        $this->courseMock
+            ->shouldReceive('getWhereEqual')
+            ->with([
+                'status' => config('number.course.active'),
+            ])
+            ->once()
+            ->andReturn(true);
+        $result = $this->subjectController->create();
+        $this->assertEquals('supervisor.manage-subject.create-subject', $result->getName());
+        $data = $result->getData();
+        $this->assertArrayHasKey('courses', $data);
+    }
+
     public function test_store_function()
     {
-        $path = 'public/images/download.png';
-        $mimeType = 'image/png';
-        $originalName = 'download.png';
+        $path = config('image.path_test');
+        $mimeType = config('image.mime_type_test');
+        $originalName = config('image.original_name_test');
         $error = config('number.empty');
         $this->faker = Faker::create();
         $data = [
@@ -106,6 +244,27 @@ class SubjectControllerTest extends TestCase
             route('subject.show', ['subject' => $subject->id]),
             $result->headers->get('Location')
         );
+    }
+
+    public function test_edit_function()
+    {
+        $this->subjectMock
+            ->shouldReceive('getById')
+            ->with(config('number.init'))
+            ->once()
+            ->andReturn(true);
+        $this->courseMock
+            ->shouldReceive('getWhereEqual')
+            ->with([
+                'status' => config('number.course.active'),
+            ])
+            ->once()
+            ->andReturn(true);
+        $result = $this->subjectController->edit(config('number.init'));
+        $data = $result->getData();
+        $this->assertEquals('supervisor.manage-subject.edit-subject', $result->getName());
+        $this->assertArrayHasKey('subject', $data);
+        $this->assertArrayHasKey('courses', $data);
     }
 
     public function test_update_function()
@@ -205,7 +364,13 @@ class SubjectControllerTest extends TestCase
             ->once()
             ->andReturn(true);
 
-        $courseUsers = new Collection();
+        $courseUser = new CourseUser();
+        $courseUser->id  = config('number.init');
+        $courseUser->status = config('number.active');
+        $courseUsers = new Collection([
+            $courseUser,
+            $courseUser,
+        ]);
         $this->courseUserMock
             ->shouldReceive('getWhereEqual')
             ->with([
@@ -213,17 +378,60 @@ class SubjectControllerTest extends TestCase
             ], 'user')
             ->once()
             ->andReturn($courseUsers);
-        $subjects = new Collection(
-            [
-                new Subject(),
-            ]
-        );
+        $subject = new Subject();
+        $subject->id = config('number.init');
+        $subjects = new Collection([
+            $subject,
+        ]);
         $this->courseMock
             ->shouldReceive('getSubjectsByCourse')
             ->with($course)
             ->once()
             ->andReturn($subjects);
 
+        $user = new User();
+        $user->id = config('number.init');
+        $this->courseUserMock
+            ->shouldReceive('getUserByCourseUser')
+            ->with($courseUser)
+            ->twice()
+            ->andReturn($user);
+        $subjectUser = new SubjectUser([
+            'status' => config('number.inactive'),
+            'subject_id' => config('number.init'),
+        ]);
+        $subjectUser->subject = new Subject([
+            'time' => config('number.time_test'),
+        ]);
+
+        $this->userMock
+            ->shouldReceive('getSubjectUsersByUser')
+            ->twice()
+            ->andReturn(
+                new Collection([
+                    $subjectUser,
+                    new SubjectUser()
+                ]),
+                new Collection([
+                    new SubjectUser()
+                ])
+            );
+
+        $this->subjectUserMock
+            ->shouldReceive('update')
+            ->once()
+            ->andReturn(true);
+        $this->courseUserMock
+            ->shouldReceive('getWhereEqual')
+            ->once()
+            ->andReturn(new Collection([
+                $courseUser,
+                $courseUser,
+            ]));
+        $this->courseUserMock
+            ->shouldReceive('update')
+            ->once()
+            ->andReturn(true);
         $result = $this->subjectController->destroy(config('number.test.id'));
         $this->assertInstanceOf(RedirectResponse::class, $result);
         $this->assertEquals(

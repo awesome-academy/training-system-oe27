@@ -46,7 +46,7 @@ class SubjectUserTest extends TestCase
 
     public function test_user_relation()
     {
-        $this->test_belongsTo_relation(
+        $this->belongsTo_relation_test(
             User::class,
             'user_id',
             'id',
@@ -56,7 +56,7 @@ class SubjectUserTest extends TestCase
 
     public function test_subject_relation()
     {
-        $this->test_belongsTo_relation(
+        $this->belongsTo_relation_test(
             Subject::class,
             'subject_id',
             'id',

@@ -11,14 +11,14 @@ abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
 
-    protected function test_hasMany_relation($related, $foreignKey, $relation)
+    protected function hasMany_relation_test($related, $foreignKey, $relation)
     {
         $this->assertInstanceOf(HasMany::class, $relation);
         $this->assertInstanceOf($related, $relation->getRelated());
         $this->assertEquals($foreignKey, $relation->getForeignKeyName());
     }
 
-    protected function test_belongsTo_relation($related, $foreignKey, $ownerKey, $relation)
+    protected function belongsTo_relation_test($related, $foreignKey, $ownerKey, $relation)
     {
         $this->assertInstanceOf(BelongsTo::class, $relation);
         $this->assertInstanceOf($related, $relation->getRelated());
@@ -26,7 +26,7 @@ abstract class TestCase extends BaseTestCase
         $this->assertEquals($foreignKey, $relation->getForeignKeyName());
     }
 
-    protected function test_belongsToMany_relation($related, $foreignKey, $relatedKey, $relation)
+    protected function belongsToMany_relation_test($related, $foreignKey, $relatedKey, $relation)
     {
         $this->assertInstanceOf(BelongsToMany::class, $relation);
         $this->assertInstanceOf($related, $relation->getRelated());

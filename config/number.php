@@ -40,4 +40,6 @@ return [
     ],
     'report_weekday' => 4,
     'report_hour' => '16:00',
+    'date_test' => '2020-09-16',
+    'time_test' => 2,
 ];
